@@ -1,12 +1,12 @@
 import { TopBar } from './TopBar';
 import { ControlsBar } from './ControlsBar'; // Assume created
 import { TimeInfoDisplay } from './TimeInfoDisplay'; // Assume created
-import { WaveformDisplay } from '../core/WaveformDisplay';
+import { WaveformDisplay } from './WaveformDisplay';
 import { PlaybackControls } from './PlaybackControls'; // Assume created
 import { AudioManager } from '../core/AudioManager';
 // import { HistoryManager } from '../core/HistoryManager'; // For Undo/Redo (future)
 import { AudioEditorState, AudioEditorEvent, SelectionRange } from '../types';
-import { formatTime } from '../core/Utils';
+import { formatTime, clamp } from '../core/Utils'; // Assuming clamp is in Utils
 
 export class AudioEditor extends EventTarget {
     private element: HTMLElement;
@@ -178,7 +178,7 @@ export class AudioEditor extends EventTarget {
 
         // Keyboard shortcuts (Listen on the document or a main container)
         this.element.setAttribute('tabindex', '-1'); // Make editor focusable for key events
-         this.addListener(this.element, 'keydown', this.handleKeyDown.bind(this));
+         this.element.addEventListener('keydown', this.handleKeyDown.bind(this));
     }
 
      // Central state update function
@@ -216,7 +216,7 @@ export class AudioEditor extends EventTarget {
          if (!this.state.isPlaying || !this.state.audioBuffer) return;
          // Store current position before stopping
          const currentPos = this.audioManager.getCurrentPlaybackPosition(this.state.totalDuration);
-         this.audioManager.stopPlaybackInternal(false); // Stop source but keep position
+         this.audioManager.stop(false); // Stop source but keep position (using public method)
          // Ensure the position is updated in the state *before* restarting play
          this.state.currentPosition = currentPos;
          this.audioManager.play(this.state.audioBuffer, this.state, this.handlePlaybackEnded.bind(this));
@@ -237,7 +237,7 @@ export class AudioEditor extends EventTarget {
             totalDuration: 0,
             currentPosition: 0,
             selection: {start: null, end: null},
-            peaksData: null // Clear peaks
+            // peaksData: null // Clear peaks - peaksData is not part of state
         });
         try {
             const { buffer, fileName } = await this.audioManager.loadAudioFile(file);
@@ -259,7 +259,7 @@ export class AudioEditor extends EventTarget {
                 fileName: 'Error loading file',
                 audioBuffer: null,
                 totalDuration: 0,
-                error: error.message // Store error message in state?
+                // error: error.message // Error is handled via event dispatch
             });
              this.dispatchEvent(new CustomEvent<AudioEditorEvent>('error', {
                 detail: { type: 'error', payload: { message: `Failed to load audio: ${error.message}` } }
@@ -294,7 +294,7 @@ export class AudioEditor extends EventTarget {
          const wasPlaying = this.state.isPlaying;
 
          // Stop current playback source *without* resetting the desired position
-         this.audioManager.stopPlaybackInternal(false);
+         this.audioManager.stop(false); // Use public method
          this.stopPlaybackTimer(); // Stop UI timer
 
          // Set the new position
@@ -636,7 +636,7 @@ export class AudioEditor extends EventTarget {
                  }
              } catch (error: any) {
                  console.error("Error stopping recording:", error);
-                 this.setState({ isRecording: false, isLoading: false, error: error.message });
+                 this.setState({ isRecording: false, isLoading: false }); // Error handled via event dispatch
                  this.dispatchEvent(new CustomEvent<AudioEditorEvent>('error', {
                     detail: { type: 'error', payload: { message: `Failed to stop recording: ${error.message}` } }
                  }));
@@ -661,7 +661,7 @@ export class AudioEditor extends EventTarget {
                  console.log("Recording started.");
              } catch (error: any) {
                   console.error("Failed to start recording:", error);
-                  this.setState({ isRecording: false, error: error.message }); // Reset recording state on error
+                  this.setState({ isRecording: false }); // Error handled via event dispatch
                   this.dispatchEvent(new CustomEvent<AudioEditorEvent>('error', {
                      detail: { type: 'error', payload: { message: `Failed to start recording: ${error.message}` } }
                   }));
@@ -677,7 +677,7 @@ export class AudioEditor extends EventTarget {
         this.controlsBar?.render(this.state); // Assumes render method exists
         this.timeInfoDisplay?.render(this.state); // Assumes render method exists
         // Pass peaks data only if it's relevant (buffer exists)
-        this.waveformDisplay?.render(this.state, this.state.audioBuffer ? this.peaksData : undefined);
+        this.waveformDisplay?.render(this.state, this.state.audioBuffer ? (this.peaksData ?? undefined) : undefined);
         this.playbackControls?.render(this.state); // Assumes render method exists
 
         // Note: Individual components should handle their internal DOM updates based on the state they receive.
@@ -701,7 +701,7 @@ export class AudioEditor extends EventTarget {
          if (this.state.isLoading || this.state.isRecording) return; // Prevent loading during critical states
 
         this.stop(true); // Stop current activity
-        this.setState({ isLoading: true, fileName: "Loading...", audioBuffer: null, totalDuration: 0, currentPosition: 0, selection: {start: null, end: null}, peaksData: null });
+        this.setState({ isLoading: true, fileName: "Loading...", audioBuffer: null, totalDuration: 0, currentPosition: 0, selection: {start: null, end: null} }); // peaksData removed
 
         try {
             let buffer: AudioBuffer;
@@ -743,7 +743,7 @@ export class AudioEditor extends EventTarget {
 
         } catch (error: any) {
              console.error("Error loading audio programmatically:", error);
-             this.setState({ isLoading: false, fileName: 'Error loading file', audioBuffer: null, totalDuration: 0, error: error.message });
+             this.setState({ isLoading: false, fileName: 'Error loading file', audioBuffer: null, totalDuration: 0 }); // error removed
               this.dispatchEvent(new CustomEvent<AudioEditorEvent>('error', {
                  detail: { type: 'error', payload: { message: `Failed to load audio: ${error.message}` } }
             }));

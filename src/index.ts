@@ -101,3 +101,5 @@ export function createAudioEditor(containerId: string): AudioEditor {
     // Instantiate the editor using the container ID and the HTML string
     return new AudioEditor(containerId, initialHtml);
 }
+
+// Demo initialization is handled by demo.js

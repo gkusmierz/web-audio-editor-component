@@ -16,7 +16,7 @@
       "build:esm": "tsc --module esnext --outDir dist/esm",
       "build:cjs": "tsc --module commonjs --outDir dist/cjs",
       "build": "npm run clean && npm run build:esm && npm run build:cjs",
-      "dev": "esbuild src/index.ts --bundle --outfile=dist/bundle.js --format=esm --sourcemap --watch",
+      "dev": "esbuild demo.js --bundle --outfile=dist/bundle.js --format=esm --sourcemap --watch",
       "prepare": "npm run build"
     },
     "keywords": [
