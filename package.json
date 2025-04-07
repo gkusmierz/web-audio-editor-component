@@ -1,0 +1,37 @@
+{
+    "name": "web-audio-editor-component",
+    "version": "0.1.0",
+    "description": "A reusable web component for basic audio editing and recording.",
+    "type": "module",
+    "main": "./dist/cjs/index.js",
+    "module": "./dist/esm/index.js",
+    "types": "./dist/esm/index.d.ts",
+    "files": [
+      "dist",
+      "src",
+      "styles.css"
+    ],
+    "scripts": {
+      "clean": "rm -rf dist",
+      "build:esm": "tsc --module esnext --outDir dist/esm",
+      "build:cjs": "tsc --module commonjs --outDir dist/cjs",
+      "build": "npm run clean && npm run build:esm && npm run build:cjs",
+      "dev": "esbuild src/index.ts --bundle --outfile=dist/bundle.js --format=esm --sourcemap --watch",
+      "prepare": "npm run build"
+    },
+    "keywords": [
+      "audio",
+      "editor",
+      "web audio",
+      "recorder",
+      "component",
+      "typescript"
+    ],
+    "author": "Your Name <your.email@example.com>",
+    "license": "MIT",
+    "devDependencies": {
+      "@types/node": "^20.11.24",
+      "esbuild": "^0.20.1",
+      "typescript": "^5.3.3"
+    }
+  }
